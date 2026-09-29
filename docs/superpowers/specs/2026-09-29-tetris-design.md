@@ -42,10 +42,13 @@ Prosta gra typu Tetris w przeglądarce, dla dzieci i młodzieży, do grania dla 
 
 ### 3.2 Pojawianie się klocka
 - Nowy klocek pojawia się w pozycji obrotu 0. Lewy górny róg jego siatki stoi w kolumnie 3, a w wierszu 0 znajduje się najwyższy zajęty wiersz kształtu (dla każdego klocka ustalamy przesunięcie w pionie).
-- Jeśli nowy klocek od razu nachodzi na zajęte pola, gra się kończy („konstrukcja dotknęła sufitu”).
+- Gra się kończy („konstrukcja dotknęła sufitu”), gdy:
+  - nowy klocek od razu nachodzi na zajęte pola, albo
+  - klocek zatrzymuje się, wystając częściowo ponad górną krawędź planszy.
 
 ### 3.3 Ruch i obrót
-- **Ruch** w lewo, w prawo lub w dół wykonuje się tylko wtedy, gdy klocek w nowym położeniu nie wychodzi poza planszę i nie nachodzi na zajęte pola. W przeciwnym razie nic się nie dzieje.
+- **Ruch** w lewo, w prawo lub w dół wykonuje się tylko wtedy, gdy klocek w nowym położeniu nie wychodzi poza lewą, prawą ani dolną krawędź planszy i nie nachodzi na zajęte pola. W przeciwnym razie nic się nie dzieje.
+- Klocek może chwilowo wystawać **ponad** górną krawędź (np. klocek I obrócony zaraz po pojawieniu się). Pola nad planszą nie są rysowane.
 - **Obrót** przechodzi do następnej pozycji obrotu (w prawo, w kółko 0→1→2→3→0). Obowiązuje ta sama zasada: przy kolizji obrót się nie wykonuje. Nie ma odsuwania klocka od ściany (wall kick).
 
 ### 3.4 Opadanie i zatrzymanie
@@ -87,10 +90,11 @@ Zwykłe skrypty `<script>` bez modułów ES, bo moduły nie działają przy otwi
 
 ```
 index.html          strona: plansza, wynik, nakładki, przycisk
-style.css           wygląd
-src/pieces.js       kształty (4 pozycje obrotu), kolory, przesunięcia startowe
+style.css           wygląd, w tym kolory klocków (klasy cell--I … cell--L)
+src/pieces.js       kształty (4 pozycje obrotu), przesunięcia startowe
 src/game.js         czysta logika gry — bez DOM, bez zegara
 src/view.js         rysowanie w DOM, klawiatura, zegar
+tests/pieces.test.js testy kształtów (node:test)
 tests/game.test.js  testy logiki (node:test)
 package.json        tylko skrypt "test": "node --test"
 ```
@@ -142,7 +146,7 @@ TDD: każda reguła z punktu 3 najpierw dostaje test, który nie przechodzi. Tes
 4. Tick przesuwa klocek o 1 wiersz w dół.
 5. Tick na dnie lub na innych klockach zatrzymuje klocek, wpisuje go w planszę i pojawia się nowy.
 6. Zbicie 1, 2, 3 i 4 wierszy: poprawne punkty (100/300/500/800) i opadnięcie wierszy znad zbitych.
-7. Koniec gry, gdy nowy klocek nie ma miejsca.
+7. Koniec gry, gdy nowy klocek nie ma miejsca albo gdy klocek zatrzyma się, wystając ponad planszę.
 8. Pauza: tick, ruch i obrót nic nie zmieniają; ponowne przełączenie wznawia grę.
 9. Po końcu gry tick, ruch, obrót i pauza nic nie zmieniają.
 10. Funkcje nie zmieniają przekazanego stanu.
