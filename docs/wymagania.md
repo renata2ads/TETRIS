@@ -59,6 +59,7 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
 ## 5. Wygląd
 
 - Prosty, płaski styl, każdy rodzaj klocka ma własny kolor (klasyczne kolory). **[Z]**
+- Obramowanie planszy jest zielone. **[U]**
 - Obok planszy widać aktualny wynik. **[Z]**
 - Interfejs po polsku. **[Z]**
 
