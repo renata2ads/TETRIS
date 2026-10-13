@@ -23,7 +23,7 @@
 **Poza zakresem:**
 - Poziomy i przyspieszanie gry. **[U]**
 - Dźwięk i muzyka. **[U]**
-- Podgląd następnego klocka, rekord zapamiętany w przeglądarce. **[U]**
+- Podgląd następnego klocka. **[U]**
 - Hard drop, hold, „duch” klocka, animacje, ranking online, sterowanie dotykowe. **[Z]**
 
 ## 3. Zasady rozgrywki
@@ -67,15 +67,40 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
 
 - Brak dźwięku. **[U]**
 
-## 7. Technika
+## 7. Zapis wyników i wznawianie gry (baza danych)
+
+- Wyniki rozgrywek zapisują się w bazie danych Supabase. **[U]**
+- Przerwaną rozgrywkę można wznowić; jej stan jest zapisany w bazie danych. **[U]**
+- Gracz nie zakłada konta: przy pierwszej grze wpisuje nick, który gra zapamiętuje w przeglądarce. Nie zbieramy e-maili ani innych danych osobowych dzieci. **[Z]**
+- Gra nadaje graczowi losowy identyfikator (UUID) zapamiętany w przeglądarce. Zapis gry jest przypisany do tego identyfikatora, więc wznowić grę można na tym samym urządzeniu i w tej samej przeglądarce. **[Z]**
+- Wynik zapisuje się po zakończeniu gry (game over): nick, liczba punktów, data. **[Z]**
+- Stan gry (plansza, aktywny klocek, wynik) zapisuje się przy pauzie i przy zamknięciu lub ukryciu karty. Gracz ma jeden zapis; nowy zapis nadpisuje poprzedni. **[Z]**
+- Przy wejściu do gry, jeśli istnieje zapis, gra pyta: „Wznowić grę?” z przyciskami „Wznów” i „Nowa gra”. Wznowiona gra startuje w pauzie. **[Z]**
+- Po game over zapis przerwanej gry jest usuwany. **[Z]**
+- Obok planszy widać 10 najlepszych wyników (nick + punkty). **[Z]**
+- Gdy baza jest niedostępna, gra działa normalnie, tylko bez zapisu; gracz widzi krótki komunikat „Nie udało się zapisać”. **[Z]**
+- Bezpieczeństwo: klucz publiczny (anon) jest w kodzie strony, więc dostęp do tabel ograniczają reguły RLS. Zapisy gry są dostępne tylko przez funkcje bazy, które wymagają identyfikatora gracza. Wyniki można tylko dodawać i czytać, a nie zmieniać ani usuwać. **[Z]**
+- Schemat bazy: `supabase/schema.sql`. **[Z]**
+
+## 8. Technika
 
 - JavaScript + HTML. **[U]**
 - Plansza zbudowana z elementów HTML (siatka div-ów), nie z `<canvas>`. **[U]**
 - Czysty JavaScript, bez bibliotek; uruchamiana przez otwarcie `index.html` w przeglądarce. **[Z]**
+- Z Supabase gra łączy się przez jego REST API zwykłym `fetch`, bez biblioteki `supabase-js`. Adres projektu i klucz publiczny (anon) są w pliku konfiguracyjnym strony. **[Z]**
 - Logika gry (plansza, kolizje, obroty, zbijanie linii, punkty) oddzielona od wyświetlania i testowana automatycznie w Node (`node:test`, bez instalowania pakietów). **[Z]**
 - Działa w aktualnym Chrome, Edge i Firefox. **[Z]**
 
 ---
+
+## Na przyszłość (future)
+
+- **Wznawianie gry na innym urządzeniu.** **[U]** Dziś zapis jest przypisany do identyfikatora ukrytego w przeglądarce, więc wznowić grę można tylko na tym samym urządzeniu. Rozważane warianty:
+  1. **Kod gracza do przepisania** (np. `KLOC-7QX4-M2PA`), wpisywany na innym urządzeniu w „Mam kod”. Bez logowania i danych osobowych; w bazie zapis przypisany do kodu zamiast identyfikatora. *Rekomendowany.*
+  2. **Nick + PIN.** Znajomy schemat, ale nick musi być unikalny, PIN łatwo zapomnieć, a 4 cyfry wymagają blokady wielu prób w bazie.
+  3. **Logowanie e-mailem lub Google.** Najwygodniejsze, ale to dane osobowe dzieci (RODO, zgoda rodzica) i dużo więcej pracy.
+
+  Tabela `scores` (ranking) się nie zmienia. Wariant 1 lub 2 wymaga zmiany `saved_games` i funkcji w `supabase/schema.sql`.
 
 ## Pytania otwarte
 

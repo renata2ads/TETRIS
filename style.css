@@ -126,3 +126,64 @@ kbd {
   background: #44445a;
   font-family: inherit;
 }
+
+.nick-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.nick-form input {
+  font: inherit;
+  font-size: 1.1rem;
+  width: 200px;
+  padding: 8px 10px;
+  border: 2px solid #30c050;
+  border-radius: 8px;
+  background: var(--cell-empty);
+  color: var(--text);
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+}
+
+button.secondary {
+  background: #44445a;
+}
+
+.player {
+  margin: 16px 0 0;
+  opacity: 0.8;
+}
+
+.ranking-title {
+  margin: 16px 0 8px;
+  font-size: 1.1rem;
+}
+
+.ranking {
+  margin: 0;
+  padding-left: 1.5em;
+  line-height: 1.7;
+}
+
+.ranking li span {
+  float: right;
+  margin-left: 12px;
+  font-weight: bold;
+}
+
+.save-error {
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #e03a3a;
+}
+
+.save-error[hidden] {
+  display: none;
+}

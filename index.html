@@ -19,6 +19,22 @@
           <p>Wynik: <span id="final-score">0</span></p>
           <button id="restart" type="button">Zagraj ponownie</button>
         </div>
+        <div id="nick-overlay" class="overlay" hidden>
+          <p class="overlay-title">Witaj!</p>
+          <form id="nick-form" class="nick-form">
+            <label for="nick-input">Jak masz na imię?</label>
+            <input id="nick-input" type="text" maxlength="20" autocomplete="off" required />
+            <button type="submit">Graj</button>
+          </form>
+        </div>
+        <div id="resume-overlay" class="overlay" hidden>
+          <p class="overlay-title">Wznowić grę?</p>
+          <p>Zapisany wynik: <span id="resume-score">0</span></p>
+          <div class="buttons">
+            <button id="resume-yes" type="button">Wznów</button>
+            <button id="resume-no" type="button" class="secondary">Nowa gra</button>
+          </div>
+        </div>
       </div>
       <aside class="panel">
         <h1>Kosmiczne Klocki</h1>
@@ -30,10 +46,17 @@
           <li><kbd>↓</kbd> szybciej w dół</li>
           <li><kbd>P</kbd> pauza</li>
         </ul>
+        <p id="player" class="player"></p>
+        <h2 class="ranking-title">Najlepsze wyniki</h2>
+        <ol id="ranking" class="ranking"></ol>
+        <p id="save-error" class="save-error" hidden>Nie udało się zapisać</p>
       </aside>
     </main>
     <script src="src/pieces.js"></script>
     <script src="src/game.js"></script>
+    <script src="src/save.js"></script>
+    <script src="src/api.js"></script>
+    <script src="src/config.js"></script>
     <script src="src/view.js"></script>
   </body>
 </html>
