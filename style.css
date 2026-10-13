@@ -187,3 +187,37 @@ button.secondary {
 .save-error[hidden] {
   display: none;
 }
+
+.buttons--column {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.auth-error {
+  min-height: 1.3em;
+  margin: 0;
+  color: #ff9a9a;
+}
+
+button.small {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+button.link {
+  padding: 0;
+  background: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  text-decoration: underline;
+}
+
+button[hidden] {
+  display: none;
+}

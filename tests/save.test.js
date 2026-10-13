@@ -100,3 +100,12 @@ test('restoreGame odrzuca klocek poza planszą albo na zajętych polach', () => 
     assert.strictEqual(save.restoreGame(saved, fixedRandom), null, `przypadek ${i}`);
   });
 });
+
+test('transferAction: co zrobić z grą gościa po zalogowaniu', () => {
+  const game1 = { score: 1 };
+  const game2 = { score: 2 };
+  assert.strictEqual(save.transferAction(null, null), 'none');
+  assert.strictEqual(save.transferAction(null, game2), 'none');
+  assert.strictEqual(save.transferAction(game1, null), 'move');
+  assert.strictEqual(save.transferAction(game1, game2), 'ask');
+});

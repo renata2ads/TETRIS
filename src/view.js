@@ -3,12 +3,16 @@
 
   const T = window.Tetris;
   const { createGame, moveLeft, moveRight, rotate, tick, togglePause, getCells, COLS } = T;
-  const { serializeGame, restoreGame, normalizeNick, shouldSave } = T;
+  const { serializeGame, restoreGame, normalizeNick, shouldSave, transferAction } = T;
+  const { AuthError, needsRefresh, isSession } = T;
   const TICK_MS = 1000;
   const RANKING_SIZE = 10;
   const ERROR_MS = 3000;
+  const SESSION_CHECK_MS = 60 * 1000;
 
-  const api = T.createApi({ url: T.config.url, key: T.config.key, fetch: window.fetch.bind(window) });
+  const fetchFn = window.fetch.bind(window);
+  const api = T.createApi({ url: T.config.url, key: T.config.key, fetch: fetchFn });
+  const auth = T.createAuth({ url: T.config.url, key: T.config.key, fetch: fetchFn });
 
   const $ = (id) => document.getElementById(id);
   const boardEl = $('board');
@@ -18,13 +22,32 @@
   const overOverlay = $('over-overlay');
   const nickOverlay = $('nick-overlay');
   const resumeOverlay = $('resume-overlay');
+  const welcomeOverlay = $('welcome-overlay');
+  const authOverlay = $('auth-overlay');
+  const chooseOverlay = $('choose-overlay');
   const restartButton = $('restart');
   const nickForm = $('nick-form');
   const nickInput = $('nick-input');
   const resumeScoreEl = $('resume-score');
+  const authForm = $('auth-form');
+  const authTitle = $('auth-title');
+  const authUser = $('auth-user');
+  const authPass = $('auth-pass');
+  const authSubmit = $('auth-submit');
+  const authError = $('auth-error');
   const playerEl = $('player');
+  const accountButton = $('account-button');
   const rankingEl = $('ranking');
   const saveErrorEl = $('save-error');
+
+  // Okna, przy których gra stoi, a klawisze nie sterują planszą.
+  const MODALS = [welcomeOverlay, nickOverlay, authOverlay, resumeOverlay, chooseOverlay];
+  const modalOpen = () => MODALS.some((el) => !el.hidden);
+  function showOnly(el) {
+    MODALS.forEach((modal) => {
+      modal.hidden = modal !== el;
+    });
+  }
 
   // --- Pamięć przeglądarki (może być niedostępna — wtedy działamy bez niej) ---
   function readStorage(name) {
@@ -43,12 +66,38 @@
     }
   }
 
+  function removeStorage(name) {
+    try {
+      localStorage.removeItem(name);
+    } catch (e) {
+      /* brak pamięci — trudno */
+    }
+  }
+
   let playerId = readStorage('kk.playerId');
   if (!playerId) {
     playerId = crypto.randomUUID();
     writeStorage('kk.playerId', playerId);
   }
   let nick = normalizeNick(readStorage('kk.nick'));
+
+  function loadSession() {
+    try {
+      const value = JSON.parse(readStorage('kk.session'));
+      return isSession(value) ? value : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  let session = loadSession();
+  function storeSession(next) {
+    session = next;
+    if (next) writeStorage('kk.session', JSON.stringify(next));
+    else removeStorage('kk.session');
+  }
+
+  const playerName = () => (session ? session.username : nick);
 
   // --- Plansza ---
   const cellEls = [];
@@ -59,7 +108,7 @@
     cellEls.push(el);
   }
 
-  // null = gra jeszcze nie wystartowała (czekamy na nick albo decyzję o wznowieniu).
+  // null = gra jeszcze nie wystartowała.
   let state = null;
 
   function render() {
@@ -71,10 +120,18 @@
       });
       scoreEl.textContent = state.score;
       finalScoreEl.textContent = state.score;
+    } else {
+      cellEls.forEach((el) => {
+        el.className = 'cell';
+      });
+      scoreEl.textContent = 0;
     }
     pauseOverlay.hidden = !state || state.status !== 'paused';
     overOverlay.hidden = !state || state.status !== 'over';
-    playerEl.textContent = nick ? `Gracz: ${nick}` : '';
+    if (session) playerEl.textContent = `Gracz: ${session.username} ✓`;
+    else playerEl.textContent = nick && state ? `Gracz: ${nick}` : '';
+    accountButton.hidden = !session && !state;
+    accountButton.textContent = session ? 'Wyloguj' : 'Zaloguj się';
   }
 
   // --- Zapisy w bazie ---
@@ -96,10 +153,30 @@
     return result;
   }
 
+  function guestStore() {
+    return {
+      load: () => api.loadGame(playerId),
+      save: (saved, options) => api.saveGame(playerId, nick, saved, options),
+      remove: () => api.deleteGame(playerId),
+    };
+  }
+
+  // Magazyn bieżącego gracza; sesja zapamiętana w chwili wywołania.
+  function store() {
+    if (!session) return guestStore();
+    const s = session;
+    return {
+      load: () => api.loadAccountGame(s),
+      save: (saved, options) => api.saveAccountGame(s, saved, options),
+      remove: () => api.deleteAccountGame(s),
+    };
+  }
+
   function saveState(keepalive) {
-    if (!nick || !shouldSave(state)) return;
+    if (!playerName() || !shouldSave(state)) return;
     const saved = serializeGame(state);
-    inOrder(() => api.saveGame(playerId, nick, saved, { keepalive })).catch(showSaveError);
+    const target = store();
+    inOrder(() => target.save(saved, { keepalive })).catch(showSaveError);
   }
 
   function renderRanking(rows) {
@@ -108,7 +185,7 @@
         const li = document.createElement('li');
         const points = document.createElement('span');
         points.textContent = row.score;
-        li.append(row.nick, points);
+        li.append(row.verified ? `${row.nick} ✓` : row.nick, points);
         return li;
       })
     );
@@ -119,8 +196,9 @@
   }
 
   function onGameOver(finalState) {
-    inOrder(() => api.deleteGame(playerId)).catch(() => {});
-    api.submitScore(nick, finalState.score).then(refreshRanking).catch(showSaveError);
+    const target = store();
+    inOrder(() => target.remove()).catch(() => {});
+    api.submitScore(playerName(), finalState.score, session).then(refreshRanking).catch(showSaveError);
   }
 
   // --- Zmiany stanu ---
@@ -129,44 +207,137 @@
     const previous = state;
     state = next;
     render();
-    if (previous && previous.status !== 'over' && state.status === 'over') onGameOver(state);
-    if (previous && previous.status === 'playing' && state.status === 'paused') saveState(false);
+    if (previous && previous.status !== 'over' && state && state.status === 'over') onGameOver(state);
+    if (previous && previous.status === 'playing' && state && state.status === 'paused') saveState(false);
+  }
+
+  function pauseIfPlaying() {
+    if (state && state.status === 'playing') update(togglePause(state));
   }
 
   function startNewGame() {
-    inOrder(() => api.deleteGame(playerId)).catch(() => {});
+    const target = store();
+    inOrder(() => target.remove()).catch(() => {});
+    showOnly(null);
     update(createGame(Math.random));
   }
 
-  // --- Start: nick → (zapis?) → gra ---
+  async function loadSaved(target) {
+    try {
+      return restoreGame(await target.load(), Math.random);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function offerResume(saved) {
+    resumeScoreEl.textContent = saved.score;
+    showOnly(resumeOverlay);
+    $('resume-yes').onclick = () => {
+      showOnly(null);
+      update(saved);
+    };
+    $('resume-no').onclick = startNewGame;
+  }
+
+  // Start gry bieżącego gracza: zapis → pytanie o wznowienie, brak zapisu → nowa gra.
+  async function begin() {
+    const saved = await loadSaved(store());
+    if (saved) offerResume(saved);
+    else {
+      showOnly(null);
+      update(createGame(Math.random));
+    }
+  }
+
+  // Po zalogowaniu / założeniu konta: przeniesienie gry gościa (sekcja 8).
+  async function beginAccount() {
+    await queue; // najpierw dokończ zapisy gościa
+    const guestSaved = await loadSaved(guestStore());
+    const accountSaved = await loadSaved(store());
+    const action = transferAction(guestSaved, accountSaved);
+    const target = store();
+    if (action === 'move') {
+      inOrder(() => target.save(serializeGame(guestSaved))).catch(showSaveError);
+      inOrder(() => guestStore().remove()).catch(() => {});
+      offerResume(guestSaved);
+    } else if (action === 'ask') {
+      $('choose-guest-score').textContent = guestSaved.score;
+      $('choose-account-score').textContent = accountSaved.score;
+      showOnly(chooseOverlay);
+      $('choose-guest').onclick = () => {
+        inOrder(() => target.save(serializeGame(guestSaved))).catch(showSaveError);
+        inOrder(() => guestStore().remove()).catch(() => {});
+        showOnly(null);
+        update(guestSaved);
+      };
+      $('choose-account').onclick = () => {
+        inOrder(() => guestStore().remove()).catch(() => {});
+        showOnly(null);
+        update(accountSaved);
+      };
+    } else if (accountSaved) {
+      offerResume(accountSaved);
+    } else {
+      showOnly(null);
+      update(createGame(Math.random));
+    }
+  }
+
+  // --- Witaj: gość / logowanie / konto ---
   function askNick() {
-    nickOverlay.hidden = false;
+    showOnly(nickOverlay);
     nickInput.value = '';
     nickInput.focus();
   }
 
-  async function begin() {
-    let saved = null;
-    try {
-      saved = restoreGame(await api.loadGame(playerId), Math.random);
-    } catch (e) {
-      saved = null;
-    }
-    if (saved) {
-      resumeScoreEl.textContent = saved.score;
-      resumeOverlay.hidden = false;
-      $('resume-yes').onclick = () => {
-        resumeOverlay.hidden = true;
-        update(saved);
-      };
-      $('resume-no').onclick = () => {
-        resumeOverlay.hidden = true;
-        startNewGame();
-      };
-    } else {
-      update(createGame(Math.random));
-    }
+  let authMode = 'login';
+  function openAuth(mode) {
+    authMode = mode;
+    const label = mode === 'login' ? 'Zaloguj się' : 'Załóż konto';
+    authTitle.textContent = label;
+    authSubmit.textContent = label;
+    authError.textContent = '';
+    authUser.value = '';
+    authPass.value = '';
+    authPass.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+    $('auth-switch').textContent = mode === 'login' ? 'Nie masz konta? Załóż konto' : 'Masz już konto? Zaloguj się';
+    showOnly(authOverlay);
+    authUser.focus();
   }
+
+  $('welcome-guest').addEventListener('click', () => {
+    if (nick) begin();
+    else askNick();
+  });
+  $('welcome-login').addEventListener('click', () => openAuth('login'));
+  $('welcome-signup').addEventListener('click', () => openAuth('signup'));
+
+  $('auth-switch').addEventListener('click', () => openAuth(authMode === 'login' ? 'signup' : 'login'));
+
+  $('auth-back').addEventListener('click', () => {
+    showOnly(state ? null : welcomeOverlay);
+  });
+
+  authForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    authSubmit.disabled = true;
+    authError.textContent = '';
+    try {
+      const next =
+        authMode === 'login'
+          ? await auth.signIn(authUser.value, authPass.value)
+          : await auth.signUp(authUser.value, authPass.value);
+      authPass.value = '';
+      storeSession(next);
+      render();
+      await beginAccount();
+    } catch (e) {
+      authError.textContent = e instanceof AuthError ? e.message : 'Coś poszło nie tak — spróbuj ponownie';
+    } finally {
+      authSubmit.disabled = false;
+    }
+  });
 
   nickForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -174,11 +345,58 @@
     if (!value) return;
     nick = value;
     writeStorage('kk.nick', nick);
-    nickOverlay.hidden = true;
     nickInput.blur();
-    render();
     begin();
   });
+
+  async function logout() {
+    pauseIfPlaying(); // zapis na koncie
+    await queue;
+    const old = session;
+    storeSession(null);
+    auth.signOut(old);
+    state = null;
+    showOnly(welcomeOverlay);
+    render();
+  }
+
+  accountButton.addEventListener('click', () => {
+    accountButton.blur();
+    if (session) {
+      logout();
+    } else {
+      pauseIfPlaying(); // zapis gościa przed logowaniem
+      openAuth('login');
+    }
+  });
+
+  // --- Sesja: odświeżanie przed wygaśnięciem ---
+  // Jedno odświeżanie naraz; wynik liczy się tylko, jeśli w międzyczasie
+  // nikt się nie wylogował ani nie zalogował na inne konto.
+  let refreshing = null;
+  function ensureSession() {
+    if (!session || !needsRefresh(session, Date.now())) return Promise.resolve();
+    if (!refreshing) {
+      const old = session;
+      refreshing = auth
+        .refresh(old)
+        .then((fresh) => {
+          if (session === old) storeSession(fresh);
+        })
+        .catch((e) => {
+          if (session !== old) return;
+          if (e instanceof AuthError && e.code === 'network') return; // spróbujemy później
+          storeSession(null); // sesja unieważniona — wyloguj
+          state = null;
+          showOnly(welcomeOverlay);
+          render();
+        })
+        .finally(() => {
+          refreshing = null;
+        });
+    }
+    return refreshing;
+  }
 
   // --- Klawiatura ---
   const ACTIONS = {
@@ -191,9 +409,9 @@
   };
 
   document.addEventListener('keydown', (event) => {
-    // Podczas wpisywania nicka klawisze nie sterują grą.
+    // Podczas wpisywania i przy otwartych oknach klawisze nie sterują grą.
     if (event.target instanceof HTMLInputElement) return;
-    if (!state) return;
+    if (!state || modalOpen()) return;
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       return;
@@ -216,13 +434,19 @@
   });
   window.addEventListener('pagehide', () => saveState(true));
 
-  // Jeden zegar na całe życie strony.
+  // Jeden zegar gry na całe życie strony.
   setInterval(() => {
-    if (state) update(tick(state));
+    if (state && !modalOpen()) update(tick(state));
   }, TICK_MS);
+  setInterval(ensureSession, SESSION_CHECK_MS);
 
   render();
   refreshRanking();
-  if (nick) begin();
-  else askNick();
+  if (session) {
+    ensureSession().then(() => {
+      if (session) begin();
+    });
+  } else {
+    showOnly(welcomeOverlay);
+  }
 })();

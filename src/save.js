@@ -75,7 +75,13 @@
     return state !== null && (state.status === 'playing' || state.status === 'paused');
   }
 
-  Object.assign(exports, { serializeGame, restoreGame, normalizeNick, shouldSave });
+  // Co zrobić z przerwaną grą gościa po zalogowaniu (sekcja 8 wymagań).
+  function transferAction(guestSaved, accountSaved) {
+    if (!guestSaved) return 'none';
+    return accountSaved ? 'ask' : 'move';
+  }
+
+  Object.assign(exports, { serializeGame, restoreGame, normalizeNick, shouldSave, transferAction });
 })(
   typeof module !== 'undefined' ? module.exports : window.Tetris,
   typeof module !== 'undefined'

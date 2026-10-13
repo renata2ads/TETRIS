@@ -36,16 +36,22 @@ test('submitScore dodaje wiersz do tabeli scores z kluczem apikey', async () => 
   assert.deepStrictEqual(call.body, { nick: 'Ola', score: 800 });
 });
 
-test('topScores pobiera najlepsze wyniki malejąco z limitem', async () => {
-  const rows = [{ nick: 'Ola', score: 800 }, { nick: 'Jaś', score: 100 }];
+test('topScores pobiera najlepsze wyniki malejąco z limitem i oznacza wyniki z kontem', async () => {
+  const rows = [
+    { nick: 'ola', score: 800, user_id: 'user-1' },
+    { nick: 'Jaś', score: 100, user_id: null },
+  ];
   const fetch = fakeFetch({ ok: true, status: 200, body: rows });
   const result = await api(fetch).topScores(10);
   assert.strictEqual(
     fetch.calls[0].url,
-    `${URL_BASE}/rest/v1/scores?select=nick,score&order=score.desc,created_at.asc&limit=10`
+    `${URL_BASE}/rest/v1/scores?select=nick,score,user_id&order=score.desc,created_at.asc&limit=10`
   );
   assert.strictEqual(fetch.calls[0].options.method, 'GET');
-  assert.deepStrictEqual(result, rows);
+  assert.deepStrictEqual(result, [
+    { nick: 'ola', score: 800, verified: true },
+    { nick: 'Jaś', score: 100, verified: false },
+  ]);
 });
 
 test('saveGame wywołuje funkcję save_game z identyfikatorem, nickiem i stanem', async () => {
@@ -93,4 +99,47 @@ test('brak sieci kończy się wyjątkiem', async () => {
     throw new TypeError('Failed to fetch');
   };
   await assert.rejects(api(fetch).saveGame('id-1', 'Ola', {}), /Failed to fetch/);
+});
+
+const SESSION = { accessToken: 'acc', userId: 'user-1' };
+
+test('submitScore z kontem wysyła user_id i token', async () => {
+  const fetch = fakeFetch({ ok: true, status: 201, body: null });
+  await api(fetch).submitScore('ola', 500, SESSION);
+  const [call] = fetch.calls;
+  assert.strictEqual(call.url, `${URL_BASE}/rest/v1/scores`);
+  assert.strictEqual(call.options.headers.Authorization, 'Bearer acc');
+  assert.deepStrictEqual(call.body, { nick: 'ola', score: 500, user_id: 'user-1' });
+});
+
+test('loadAccountGame czyta zapis konta albo zwraca null', async () => {
+  const found = fakeFetch({ ok: true, status: 200, body: [{ state: { score: 7 } }] });
+  assert.deepStrictEqual(await api(found).loadAccountGame(SESSION), { score: 7 });
+  assert.strictEqual(found.calls[0].url, `${URL_BASE}/rest/v1/account_games?select=state&user_id=eq.user-1`);
+  assert.strictEqual(found.calls[0].options.method, 'GET');
+  assert.strictEqual(found.calls[0].options.headers.Authorization, 'Bearer acc');
+  const empty = fakeFetch({ ok: true, status: 200, body: [] });
+  assert.strictEqual(await api(empty).loadAccountGame(SESSION), null);
+});
+
+test('saveAccountGame zapisuje lub nadpisuje grę konta', async () => {
+  const fetch = fakeFetch({ ok: true, status: 201, body: null });
+  await api(fetch).saveAccountGame(SESSION, { score: 7 }, { keepalive: true });
+  const [call] = fetch.calls;
+  assert.strictEqual(call.url, `${URL_BASE}/rest/v1/account_games?on_conflict=user_id`);
+  assert.strictEqual(call.options.method, 'POST');
+  assert.strictEqual(call.options.keepalive, true);
+  assert.strictEqual(call.options.headers.Authorization, 'Bearer acc');
+  assert.strictEqual(call.options.headers.Prefer, 'resolution=merge-duplicates,return=minimal');
+  assert.strictEqual(call.body.user_id, 'user-1');
+  assert.deepStrictEqual(call.body.state, { score: 7 });
+  assert.ok(!Number.isNaN(Date.parse(call.body.updated_at)));
+});
+
+test('deleteAccountGame usuwa grę konta', async () => {
+  const fetch = fakeFetch({ ok: true, status: 204, body: null });
+  await api(fetch).deleteAccountGame(SESSION);
+  assert.strictEqual(fetch.calls[0].url, `${URL_BASE}/rest/v1/account_games?user_id=eq.user-1`);
+  assert.strictEqual(fetch.calls[0].options.method, 'DELETE');
+  assert.strictEqual(fetch.calls[0].options.headers.Authorization, 'Bearer acc');
 });
