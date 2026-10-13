@@ -81,6 +81,7 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
 - Gdy baza jest niedostępna, gra działa normalnie, tylko bez zapisu; gracz widzi krótki komunikat „Nie udało się zapisać”. **[Z]**
 - Bezpieczeństwo: klucz publiczny (anon) jest w kodzie strony, więc dostęp do tabel ograniczają reguły RLS. Zapisy gry są dostępne tylko przez funkcje bazy, które wymagają identyfikatora gracza. Wyniki można tylko dodawać i czytać, a nie zmieniać ani usuwać. **[Z]**
 - Schemat bazy: `supabase/schema.sql`. **[Z]**
+- **Znane ryzyko (zaakceptowane):** klucz publiczny jest w kodzie strony, a ranking jest anonimowy, więc osoba obeznana z techniką może wpisać do tabeli `scores` dowolny wynik (do 10 000 000) albo zasypać ją wpisami z pominięciem gry. Przy grze bez logowania nie da się tego w pełni zablokować. Gdy to nastąpi, fałszywe wpisy usuwa się ręcznie w panelu Supabase (Table Editor → `scores`). Ewentualne ograniczenia, np. limit wpisów na minutę albo wynik liczony z zapisu gry po stronie bazy, są w sekcji „Na przyszłość”. **[U]**
 
 ## 8. Technika
 
@@ -101,6 +102,8 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
   3. **Logowanie e-mailem lub Google.** Najwygodniejsze, ale to dane osobowe dzieci (RODO, zgoda rodzica) i dużo więcej pracy.
 
   Tabela `scores` (ranking) się nie zmienia. Wariant 1 lub 2 wymaga zmiany `saved_games` i funkcji w `supabase/schema.sql`.
+
+- **Ochrona rankingu przed fałszywymi wynikami.** **[U]** Możliwe kroki: limit wpisów na minutę (wyzwalacz w bazie), niższy górny limit punktów, a najmocniej: zamiast bezpośredniego dodawania do `scores` funkcja bazy `submit_score`, która bierze wynik z zapisanej gry gracza.
 
 ## Pytania otwarte
 
