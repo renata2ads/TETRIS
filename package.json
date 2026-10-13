@@ -1,0 +1,9 @@
+{
+  "name": "tetris",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prosta gra typu Tetris w przeglądarce",
+  "scripts": {
+    "test": "node --test"
+  }
+}

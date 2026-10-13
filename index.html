@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tetris</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game">
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+        <div id="pause-overlay" class="overlay" hidden>
+          <p class="overlay-title">Pauza</p>
+          <p>Naciśnij P, aby grać dalej</p>
+        </div>
+        <div id="over-overlay" class="overlay" hidden>
+          <p class="overlay-title">Koniec gry</p>
+          <p>Wynik: <span id="final-score">0</span></p>
+          <button id="restart" type="button">Zagraj ponownie</button>
+        </div>
+      </div>
+      <aside class="panel">
+        <h1>Tetris</h1>
+        <p class="score-label">Wynik</p>
+        <p id="score" class="score">0</p>
+        <ul class="keys">
+          <li><kbd>←</kbd> <kbd>→</kbd> przesuń</li>
+          <li><kbd>Spacja</kbd> obróć</li>
+          <li><kbd>↓</kbd> szybciej w dół</li>
+          <li><kbd>P</kbd> pauza</li>
+        </ul>
+      </aside>
+    </main>
+    <script src="src/pieces.js"></script>
+    <script src="src/game.js"></script>
+    <script src="src/view.js"></script>
+  </body>
+</html>

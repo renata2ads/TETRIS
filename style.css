@@ -1,0 +1,128 @@
+:root {
+  --bg: #1e1e2e;
+  --panel: #2a2a3d;
+  --text: #f4f4f8;
+  --grid: #2c2c40;
+  --cell-empty: #11111b;
+  --cell-size: 28px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+.game {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.board-wrap {
+  position: relative;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, var(--cell-size));
+  grid-template-rows: repeat(20, var(--cell-size));
+  gap: 1px;
+  background: var(--grid);
+  border: 4px solid #30c050;
+}
+
+.cell {
+  background: var(--cell-empty);
+}
+
+.cell--I { background: #00c8e0; }
+.cell--O { background: #f5d000; }
+.cell--T { background: #a040e0; }
+.cell--S { background: #30c050; }
+.cell--Z { background: #e03a3a; }
+.cell--J { background: #3060e0; }
+.cell--L { background: #f08a20; }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+/* display: flex nadpisałby atrybut hidden */
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay p {
+  margin: 0;
+}
+
+.overlay-title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+button {
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: #30c050;
+  color: #fff;
+  cursor: pointer;
+}
+
+.panel {
+  min-width: 180px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 1.8rem;
+}
+
+.score-label {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.score {
+  margin: 0 0 16px;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.keys {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  line-height: 2;
+}
+
+kbd {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #44445a;
+  font-family: inherit;
+}
