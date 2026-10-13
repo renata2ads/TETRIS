@@ -30,3 +30,28 @@ test('titleLetters: po siedmiu literach kolory zaczynają się od nowa', () => {
   const letters = space.titleLetters('abcdefgh');
   assert.strictEqual(letters[7].color, letters[0].color);
 });
+
+test('profileFor: natężenie animacji zależnie od ekranu i ustawienia tła', () => {
+  assert.strictEqual(space.profileFor('off', 'full'), null);
+  assert.strictEqual(space.profileFor('paused', 'full').animate, false);
+  assert.strictEqual(space.profileFor('game', 'off').animate, false);
+  const calm = space.profileFor('game', 'calm');
+  const full = space.profileFor('game', 'full');
+  const scene = space.profileFor('scene', 'off');
+  assert.strictEqual(calm.animate, true);
+  assert.strictEqual(full.animate, true);
+  assert.strictEqual(scene.animate, true, 'ekran powitalny zawsze w pełni');
+  assert.ok(calm.maxPieces < full.maxPieces);
+  assert.ok(calm.pieceGap[0] > full.pieceGap[0]);
+  assert.ok(calm.meteorGap[0] > full.meteorGap[0]);
+  assert.strictEqual(calm.parallax, false);
+  assert.strictEqual(full.parallax, true);
+  assert.deepStrictEqual(space.profileFor('dim', 'full'), calm, 'koniec gry spokojnie');
+});
+
+test('nextLevel: Spokojne → Pełne → Wyłączone → Spokojne', () => {
+  assert.strictEqual(space.nextLevel('calm'), 'full');
+  assert.strictEqual(space.nextLevel('full'), 'off');
+  assert.strictEqual(space.nextLevel('off'), 'calm');
+  assert.strictEqual(space.nextLevel('cokolwiek'), 'calm');
+});

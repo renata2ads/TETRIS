@@ -15,6 +15,27 @@
   ];
   const LETTER_DELAY_MS = 90;
 
+  // Natężenie animacji. Odstępy w ms: [najkrótszy, losowy dodatek].
+  const FULL = { animate: true, maxPieces: 7, pieceGap: [2200, 2600], meteorGap: [4500, 5000], parallax: true, pieceAlpha: 0.9 };
+  const CALM = { animate: true, maxPieces: 3, pieceGap: [5000, 3000], meteorGap: [10000, 5000], parallax: false, pieceAlpha: 0.55 };
+  const STILL = { animate: false };
+  const LEVELS = ['calm', 'full', 'off'];
+
+  // mode: 'scene' (okna), 'game' (gra trwa), 'paused', 'dim' (koniec gry), 'off' (kosmos ukryty).
+  // level: ustawienie gracza dla tła w trakcie gry — 'calm' | 'full' | 'off'.
+  function profileFor(mode, level) {
+    if (mode === 'off') return null;
+    if (mode === 'scene') return FULL;
+    if (mode === 'dim') return CALM;
+    if (mode === 'game') return level === 'full' ? FULL : level === 'calm' ? CALM : STILL;
+    return STILL;
+  }
+
+  function nextLevel(level) {
+    const i = LEVELS.indexOf(level);
+    return i === -1 ? 'calm' : LEVELS[(i + 1) % LEVELS.length];
+  }
+
   // Pozycja klocka: pas przy lewej albo prawej krawędzi (środek zostaje dla okienka).
   function sideX(width, rand) {
     const x = width * (0.03 + rand() * 0.2);
@@ -42,7 +63,7 @@
     let meteor = null;
     let nextMeteor = 0;
     let nextPiece = 0;
-    let mode = 'off';
+    let profile = null;
     let frame = null;
     let last = 0;
     const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -89,7 +110,7 @@
         depth: 0.2 + Math.random() * 0.8,
         tint: Math.random() < 0.25 ? '#b3a3e6' : '#ffffff',
       }));
-      if (mode === 'off' || reduced) draw(0);
+      if (!running()) draw(performance.now());
     }
 
     function spawnPiece(now) {
@@ -105,7 +126,7 @@
         size: 12 + Math.random() * 10,
         depth: 0.4 + Math.random() * 0.6,
       });
-      nextPiece = now + 2200 + Math.random() * 2600;
+      nextPiece = now + profile.pieceGap[0] + Math.random() * profile.pieceGap[1];
     }
 
     function spawnMeteor(now) {
@@ -117,7 +138,7 @@
         life: 0,
         ttl: 0.9,
       };
-      nextMeteor = now + 4500 + Math.random() * 5000;
+      nextMeteor = now + profile.meteorGap[0] + Math.random() * profile.meteorGap[1];
     }
 
     // Klocek z wypukłą krawędzią, jak na grafice.
@@ -144,7 +165,7 @@
       const gap = p.size * 0.08;
       const fade = Math.min(1, Math.max(0, (height * 0.72 - p.y) / (height * 0.15)));
       ctx.save();
-      ctx.globalAlpha = 0.9 * fade;
+      ctx.globalAlpha = (profile && profile.pieceAlpha ? profile.pieceAlpha : 0.9) * fade;
       ctx.translate(p.x + ox * p.depth, p.y + oy * p.depth);
       ctx.rotate(p.angle);
       ctx.translate((-w * p.size) / 2, (-h * p.size) / 2);
@@ -188,10 +209,12 @@
     function step(now) {
       const dt = Math.min(0.05, (now - (last || now)) / 1000);
       last = now;
-      pointer.x += (pointer.tx - pointer.x) * 0.05;
-      pointer.y += (pointer.ty - pointer.y) * 0.05;
+      const tx = profile.parallax ? pointer.tx : 0;
+      const ty = profile.parallax ? pointer.ty : 0;
+      pointer.x += (tx - pointer.x) * 0.05;
+      pointer.y += (ty - pointer.y) * 0.05;
       // Na wąskim ekranie boki są zajęte przez okienko — wtedy bez klocków.
-      if (now >= nextPiece && pieces.length < 7 && width >= 640) spawnPiece(now);
+      if (now >= nextPiece && pieces.length < profile.maxPieces && width >= 640) spawnPiece(now);
       pieces.forEach((p) => {
         p.y += p.vy * dt;
         p.x += p.drift * dt;
@@ -209,26 +232,30 @@
       frame = requestAnimationFrame(step);
     }
 
-    function shouldRun() {
-      return mode !== 'off' && !reduced && !document.hidden;
+    function running() {
+      return profile !== null && profile.animate && !reduced && !document.hidden;
     }
 
     function sync() {
-      if (shouldRun() && frame === null) {
+      if (running() && frame === null) {
         last = 0;
         const now = performance.now();
-        if (!nextMeteor) nextMeteor = now + 2500;
+        nextMeteor = Math.min(nextMeteor || Infinity, now + 2500);
         frame = requestAnimationFrame(step);
-      } else if (!shouldRun() && frame !== null) {
+      } else if (!running() && frame !== null) {
         cancelAnimationFrame(frame);
         frame = null;
       }
     }
 
-    function setMode(next) {
-      if (next === mode) return;
-      mode = next;
+    function setMode(mode, level) {
+      const next = profileFor(mode, level);
+      if (next === profile) return;
+      profile = next;
+      // Mniej klocków w spokojniejszym trybie — nadmiarowe znikają.
+      if (profile) pieces = pieces.slice(0, profile.maxPieces || 0);
       sync();
+      if (profile && !running()) draw(performance.now());
     }
 
     window.addEventListener('resize', resize);
@@ -242,5 +269,5 @@
     return { setMode };
   }
 
-  Object.assign(exports, { sideX, titleLetters, createSpace });
+  Object.assign(exports, { sideX, titleLetters, profileFor, nextLevel, createSpace });
 })(typeof module !== 'undefined' ? module.exports : window.Tetris);

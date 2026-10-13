@@ -389,3 +389,16 @@ input:focus-visible {
   background: none;
   color: var(--space-lavender);
 }
+
+/* Tło w trakcie gry: przyciemniony kosmos dookoła planszy i panelu. */
+body.is-game .space {
+  opacity: 0.45;
+}
+
+body.bg-still .space img {
+  animation-play-state: paused;
+}
+
+#bg-button {
+  display: block;
+}

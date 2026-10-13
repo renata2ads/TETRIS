@@ -24,7 +24,7 @@
 - Poziomy i przyspieszanie gry. **[U]**
 - Dźwięk i muzyka. **[U]**
 - Podgląd następnego klocka. **[U]**
-- Hard drop, hold, „duch” klocka, animacje w trakcie gry, sterowanie dotykowe. **[Z]**
+- Hard drop, hold, „duch” klocka, sterowanie dotykowe. **[Z]**
 
 ## 3. Zasady rozgrywki
 
@@ -62,8 +62,9 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
 - Obramowanie planszy jest zielone. **[U]**
 - Obok planszy widać aktualny wynik. **[Z]**
 - Interfejs po polsku. **[Z]**
-- **Ekran powitalny w kosmosie.** **[U]** Grafika `assets/kosmos.webp` (oryginał: `assets/kosmos-oryginal.png`) na cały ekran przy oknach Witaj, logowania, nicka, wznowienia i wyboru gry; przy końcu gry przyciemniona za planszą; w trakcie gry jej nie ma.
-- **Animacje (wersja „wow”, przyjazna dzieciom).** **[U]** Tytuł „Kosmiczne Klocki” spada literka po literce w kolorach klocków; migoczące gwiazdy z lekką paralaksą za kursorem; klocki dryfujące w nieważkości po bokach (nie pod okienkiem, nie na wąskich ekranach); czasem spadająca gwiazda; obrazek powoli „oddycha”. Animacje stoją w trakcie gry i na ukrytej karcie; przy systemowym „ogranicz ruch” zostaje statyczny obrazek. **[Z]** szczegóły
+- **Ekran powitalny w kosmosie.** **[U]** Grafika `assets/kosmos.webp` (oryginał: `assets/kosmos-oryginal.png`) na cały ekran przy oknach Witaj, logowania, nicka, wznowienia i wyboru gry; przy końcu gry przyciemniona za planszą; w trakcie gry przyciemniona (ok. 45%) dookoła planszy i panelu.
+- **Animacje (wersja „wow”, przyjazna dzieciom).** **[U]** Tytuł „Kosmiczne Klocki” spada literka po literce w kolorach klocków; migoczące gwiazdy z lekką paralaksą za kursorem; klocki dryfujące w nieważkości po bokach (nie pod okienkiem, nie na wąskich ekranach); czasem spadająca gwiazda; obrazek powoli „oddycha”. Animacje stoją na pauzie i na ukrytej karcie; przy systemowym „ogranicz ruch” zostaje statyczny obrazek. **[Z]** szczegóły
+- **Przycisk „Tło” w panelu** **[U]** ustawia natężenie tła w trakcie gry: „spokojne” (domyślne: migoczące gwiazdy, rzadkie półprzezroczyste klocki po bokach, rzadkie spadające gwiazdy, bez paralaksy), „pełne” (jak na ekranie powitalnym), „wyłączone” (nieruchoma grafika). Wybór zapamiętany w przeglądarce. Ekran powitalny zawsze w pełni, koniec gry spokojnie. **[Z]** szczegóły
 - Krój pisma: Baloo 2 (Google Fonts), w razie braku — systemowy. **[Z]**
 
 ## 6. Dźwięk

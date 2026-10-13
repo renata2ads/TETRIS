@@ -51,14 +51,32 @@
   }
 
   // Kosmos: pełny przy oknach (Witaj, logowanie…), przyciemniony przy końcu gry, w grze wyłączony.
+  // W grze tło ma natężenie wybrane przyciskiem „Tło” (zapamiętane w przeglądarce).
   const space = T.createSpace({ canvas: $('space-canvas'), titleEl: $('scene-title') });
-  function updateScene() {
-    const scene = modalOpen();
-    const dim = !scene && state !== null && state.status === 'over';
-    document.body.classList.toggle('is-scene', scene);
-    document.body.classList.toggle('is-dim', dim);
-    space.setMode(scene ? 'scene' : dim ? 'dim' : 'off');
+  const BG_LABELS = { calm: 'spokojne', full: 'pełne', off: 'wyłączone' };
+  let bgLevel = BG_LABELS[readStorage('kk.bg')] ? readStorage('kk.bg') : 'calm';
+  const bgButton = $('bg-button');
+  function sceneMode() {
+    if (modalOpen()) return 'scene';
+    if (!state) return 'off';
+    if (state.status === 'over') return 'dim';
+    return state.status === 'paused' ? 'paused' : 'game';
   }
+  function updateScene() {
+    const mode = sceneMode();
+    document.body.classList.toggle('is-scene', mode === 'scene');
+    document.body.classList.toggle('is-dim', mode === 'dim');
+    document.body.classList.toggle('is-game', mode === 'game' || mode === 'paused');
+    document.body.classList.toggle('bg-still', (mode === 'game' && bgLevel === 'off') || mode === 'paused');
+    bgButton.textContent = `Tło: ${BG_LABELS[bgLevel]}`;
+    space.setMode(mode, bgLevel);
+  }
+  bgButton.addEventListener('click', () => {
+    bgLevel = T.nextLevel(bgLevel);
+    writeStorage('kk.bg', bgLevel);
+    bgButton.blur(); // spacja ma obracać klocek, a nie klikać przycisk
+    updateScene();
+  });
 
   // --- Pamięć przeglądarki (może być niedostępna — wtedy działamy bez niej) ---
   function readStorage(name) {
