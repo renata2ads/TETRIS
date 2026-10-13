@@ -83,7 +83,44 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
 - Schemat bazy: `supabase/schema.sql`. **[Z]**
 - **Znane ryzyko (zaakceptowane):** klucz publiczny jest w kodzie strony, a ranking jest anonimowy, więc osoba obeznana z techniką może wpisać do tabeli `scores` dowolny wynik (do 10 000 000) albo zasypać ją wpisami z pominięciem gry. Przy grze bez logowania nie da się tego w pełni zablokować. Gdy to nastąpi, fałszywe wpisy usuwa się ręcznie w panelu Supabase (Table Editor → `scores`). Ewentualne ograniczenia, np. limit wpisów na minutę albo wynik liczony z zapisu gry po stronie bazy, są w sekcji „Na przyszłość”. **[U]**
 
-## 8. Technika
+## 8. Konta graczy (logowanie)
+
+**Decyzje użytkowniczki:**
+- Gracz może założyć konto i logować się **nazwą użytkownika i hasłem**, bez e-maila. Stan gry zalogowanego gracza jest zapisany na koncie, więc grę można wznowić na dowolnym urządzeniu. **[U]**
+- Można dalej grać **jako gość**, tak jak w sekcji 7 (nick, zapis tylko na tym urządzeniu). **[U]**
+- Gdy gość z przerwaną grą zaloguje się lub założy konto, jego gra **przechodzi na konto**. **[U]**
+- Zapomnianego hasła nie da się odzyskać samodzielnie; pomaga administratorka w panelu Supabase. **[U]** (konsekwencja logowania bez e-maila)
+
+**Ekran i przepływ:** **[Z]**
+- Na starcie nakładka „Witaj!” z przyciskami: „Graj jako gość”, „Zaloguj się”, „Załóż konto”.
+- „Graj jako gość” prowadzi do wpisania nicka (jak dziś). „Zaloguj się” i „Załóż konto” pokazują formularz: nazwa użytkownika, hasło, przycisk i „Wróć”.
+- Panel boczny: zalogowany widzi „Gracz: <nazwa> ✓” i przycisk „Wyloguj”; gość widzi „Gracz: <nick>” i przycisk „Zaloguj się”.
+- Sesja jest pamiętana w przeglądarce — po powrocie na stronę gracz jest dalej zalogowany. Wygasającą sesję gra odświeża sama.
+- Wylogowanie zapisuje bieżącą grę na koncie, wraca do nakładki „Witaj!”.
+- Gra nie toczy się, dopóki widać nakładkę „Witaj!” lub formularz; klawisze nie sterują wtedy grą.
+
+**Zasady konta:** **[Z]**
+- Nazwa użytkownika: 3–20 znaków, małe litery `a–z`, cyfry i `_`; wielkie litery zamieniane na małe. Musi być unikalna.
+- Hasło: co najmniej 6 znaków.
+- Komunikaty po polsku: „Ta nazwa jest zajęta”, „Zła nazwa użytkownika lub hasło”, „Nazwa: 3–20 znaków, małe litery, cyfry i _”, „Hasło musi mieć co najmniej 6 znaków”, „Brak połączenia — spróbuj ponownie”.
+
+**Zapis gry i wyniki zalogowanego:** **[Z]**
+- Zalogowany ma jeden zapis gry na konto; zasady zapisu (pauza, ukrycie/zamknięcie karty, usunięcie po game over, pytanie „Wznowić grę?”) jak w sekcji 7.
+- Wynik zalogowanego zapisuje się z nazwą użytkownika i jest powiązany z kontem; w rankingu oznaczony znakiem ✓. Nazwy z ✓ nie da się podrobić.
+- Gość z nickiem równym czyjejś nazwie użytkownika nie dostaje ✓.
+
+**Przeniesienie gry gościa na konto:** **[Z]**
+- Po zalogowaniu lub założeniu konta: jeśli na tym urządzeniu jest zapis gościa, a konto nie ma zapisu — zapis przechodzi na konto bez pytania.
+- Jeśli oba mają zapis — gra pyta „Którą grę zachować?” i pokazuje wyniki obu; druga jest usuwana.
+- Po przeniesieniu zapis gościa jest usuwany.
+
+**Technika i bezpieczeństwo:** **[Z]**
+- Logowanie przez Supabase Auth (hasła przechowuje i sprawdza Supabase). Nazwa użytkownika zamieniana na techniczny adres `<nazwa>@kosmiczne-klocki.local`; w panelu Supabase wyłączone potwierdzanie e-maila.
+- Wywołania przez REST API Supabase zwykłym `fetch` (bez `supabase-js`): zakładanie konta, logowanie, odświeżanie sesji, wylogowanie.
+- Zapis gry zalogowanego dostępny tylko z jego tokenem (RLS po `auth.uid()`); wynik z kontem może dodać tylko właściciel konta.
+- Bez sieci logowanie pokazuje komunikat, a „Graj jako gość” działa.
+
+## 9. Technika
 
 - JavaScript + HTML. **[U]**
 - Plansza zbudowana z elementów HTML (siatka div-ów), nie z `<canvas>`. **[U]**
@@ -96,7 +133,7 @@ Premia za zbicie kilku linii naraz zachęca do planowania, a zasada jest łatwa 
 
 ## Na przyszłość (future)
 
-- **Wznawianie gry na innym urządzeniu.** **[U]** Dziś zapis jest przypisany do identyfikatora ukrytego w przeglądarce, więc wznowić grę można tylko na tym samym urządzeniu. Rozważane warianty:
+- **Wznawianie gry na innym urządzeniu — dla gości.** **[U]** Dla zalogowanych rozwiązane w sekcji 8. Dla gości zapis jest przypisany do identyfikatora ukrytego w przeglądarce, więc wznowić grę można tylko na tym samym urządzeniu. Rozważane warianty:
   1. **Kod gracza do przepisania** (np. `KLOC-7QX4-M2PA`), wpisywany na innym urządzeniu w „Mam kod”. Bez logowania i danych osobowych; w bazie zapis przypisany do kodu zamiast identyfikatora. *Rekomendowany.*
   2. **Nick + PIN.** Znajomy schemat, ale nick musi być unikalny, PIN łatwo zapomnieć, a 4 cyfry wymagają blokady wielu prób w bazie.
   3. **Logowanie e-mailem lub Google.** Najwygodniejsze, ale to dane osobowe dzieci (RODO, zgoda rodzica) i dużo więcej pracy.
