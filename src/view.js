@@ -3,7 +3,7 @@
 
   const T = window.Tetris;
   const { createGame, moveLeft, moveRight, rotate, tick, togglePause, getCells, COLS } = T;
-  const { serializeGame, restoreGame, normalizeNick, shouldSave, transferAction } = T;
+  const { serializeGame, restoreGame, normalizeNick, shouldSave, transferAction, randomId } = T;
   const { AuthError, needsRefresh, isSession } = T;
   const TICK_MS = 1000;
   const RANKING_SIZE = 10;
@@ -76,7 +76,7 @@
 
   let playerId = readStorage('kk.playerId');
   if (!playerId) {
-    playerId = crypto.randomUUID();
+    playerId = randomId(window.crypto);
     writeStorage('kk.playerId', playerId);
   }
   let nick = normalizeNick(readStorage('kk.nick'));
@@ -164,11 +164,14 @@
   // Magazyn bieżącego gracza; sesja zapamiętana w chwili wywołania.
   function store() {
     if (!session) return guestStore();
+    // Przed każdym wywołaniem odśwież wygasły token (np. po wybudzeniu laptopa).
+    // Jeśli w międzyczasie ktoś się wylogował, zostaje sesja z chwili wywołania.
     const s = session;
+    const fresh = () => ensureSession().then(() => (session && session.userId === s.userId ? session : s));
     return {
-      load: () => api.loadAccountGame(s),
-      save: (saved, options) => api.saveAccountGame(s, saved, options),
-      remove: () => api.deleteAccountGame(s),
+      load: () => fresh().then((current) => api.loadAccountGame(current)),
+      save: (saved, options) => fresh().then((current) => api.saveAccountGame(current, saved, options)),
+      remove: () => fresh().then((current) => api.deleteAccountGame(current)),
     };
   }
 
@@ -192,7 +195,15 @@
   }
 
   function refreshRanking() {
-    api.topScores(RANKING_SIZE).then(renderRanking).catch(() => {});
+    api
+      .topScores(RANKING_SIZE)
+      .then(renderRanking)
+      .catch(() => {
+        const li = document.createElement('li');
+        li.className = 'ranking-error';
+        li.textContent = 'Ranking niedostępny';
+        rankingEl.replaceChildren(li);
+      });
   }
 
   function onGameOver(finalState) {
@@ -429,10 +440,10 @@
   });
 
   // --- Zapis przy ukryciu / zamknięciu karty ---
+  // Zamknięcie karty też najpierw ją ukrywa, więc jeden zapis wystarcza.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveState(true);
   });
-  window.addEventListener('pagehide', () => saveState(true));
 
   // Jeden zegar gry na całe życie strony.
   setInterval(() => {

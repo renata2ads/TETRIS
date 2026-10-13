@@ -81,7 +81,17 @@
     return accountSaved ? 'ask' : 'move';
   }
 
-  Object.assign(exports, { serializeGame, restoreGame, normalizeNick, shouldSave, transferAction });
+  // Identyfikator gościa. crypto.randomUUID nie ma w starych przeglądarkach
+  // (Safari < 15.4) ani poza HTTPS — wtedy zapasowy UUID v4.
+  function randomId(cryptoObj) {
+    if (cryptoObj && typeof cryptoObj.randomUUID === 'function') return cryptoObj.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
+      const r = Math.floor(Math.random() * 16);
+      return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  Object.assign(exports, { serializeGame, restoreGame, normalizeNick, shouldSave, transferAction, randomId });
 })(
   typeof module !== 'undefined' ? module.exports : window.Tetris,
   typeof module !== 'undefined'

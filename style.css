@@ -221,3 +221,9 @@ button.link {
 button[hidden] {
   display: none;
 }
+
+.ranking .ranking-error {
+  list-style: none;
+  margin-left: -1.5em;
+  opacity: 0.8;
+}

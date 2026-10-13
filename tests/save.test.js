@@ -109,3 +109,11 @@ test('transferAction: co zrobić z grą gościa po zalogowaniu', () => {
   assert.strictEqual(save.transferAction(game1, null), 'move');
   assert.strictEqual(save.transferAction(game1, game2), 'ask');
 });
+
+test('randomId: UUID z crypto, a bez randomUUID (stara przeglądarka) zapasowy UUID v4', () => {
+  assert.strictEqual(save.randomId({ randomUUID: () => 'z-crypto' }), 'z-crypto');
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  assert.match(save.randomId({}), uuid);
+  assert.match(save.randomId(undefined), uuid);
+  assert.notStrictEqual(save.randomId({}), save.randomId({}));
+});
