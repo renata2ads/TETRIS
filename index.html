@@ -5,20 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Kosmiczne Klocki</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 2'%3E%3Crect width='3' height='1' fill='%23a040e0'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23a040e0'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" />
+    <link rel="preload" as="image" href="assets/kosmos.webp" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main class="game">
-      <div class="board-wrap">
-        <div id="board" class="board"></div>
-        <div id="pause-overlay" class="overlay" hidden>
-          <p class="overlay-title">Pauza</p>
-          <p>Naciśnij P, aby grać dalej</p>
-        </div>
-        <div id="over-overlay" class="overlay" hidden>
-          <p class="overlay-title">Koniec gry</p>
-          <p>Wynik: <span id="final-score">0</span></p>
-          <button id="restart" type="button">Zagraj ponownie</button>
+    <div id="space" class="space" aria-hidden="true">
+      <img src="assets/kosmos.webp" alt="" width="1672" height="941" />
+      <canvas id="space-canvas"></canvas>
+    </div>
+    <section id="scene" class="scene">
+      <h1 id="scene-title" class="scene-title">Kosmiczne Klocki</h1>
+        <div id="welcome-overlay" class="overlay" hidden>
+          <p class="overlay-title">Witaj!</p>
+          <div class="buttons buttons--column">
+            <button id="welcome-guest" type="button">Graj jako gość</button>
+            <button id="welcome-login" type="button" class="secondary">Zaloguj się</button>
+            <button id="welcome-signup" type="button" class="secondary">Załóż konto</button>
+          </div>
         </div>
         <div id="nick-overlay" class="overlay" hidden>
           <p class="overlay-title">Witaj!</p>
@@ -27,22 +33,6 @@
             <input id="nick-input" type="text" maxlength="20" autocomplete="off" required />
             <button type="submit">Graj</button>
           </form>
-        </div>
-        <div id="resume-overlay" class="overlay" hidden>
-          <p class="overlay-title">Wznowić grę?</p>
-          <p>Zapisany wynik: <span id="resume-score">0</span></p>
-          <div class="buttons">
-            <button id="resume-yes" type="button">Wznów</button>
-            <button id="resume-no" type="button" class="secondary">Nowa gra</button>
-          </div>
-        </div>
-        <div id="welcome-overlay" class="overlay" hidden>
-          <p class="overlay-title">Witaj!</p>
-          <div class="buttons buttons--column">
-            <button id="welcome-guest" type="button">Graj jako gość</button>
-            <button id="welcome-login" type="button" class="secondary">Zaloguj się</button>
-            <button id="welcome-signup" type="button" class="secondary">Załóż konto</button>
-          </div>
         </div>
         <div id="auth-overlay" class="overlay" hidden>
           <p id="auth-title" class="overlay-title">Zaloguj się</p>
@@ -59,6 +49,14 @@
             <button id="auth-switch" type="button" class="link">Nie masz konta? Załóż konto</button>
           </form>
         </div>
+        <div id="resume-overlay" class="overlay" hidden>
+          <p class="overlay-title">Wznowić grę?</p>
+          <p>Zapisany wynik: <span id="resume-score">0</span></p>
+          <div class="buttons">
+            <button id="resume-yes" type="button">Wznów</button>
+            <button id="resume-no" type="button" class="secondary">Nowa gra</button>
+          </div>
+        </div>
         <div id="choose-overlay" class="overlay" hidden>
           <p class="overlay-title">Którą grę zachować?</p>
           <div class="buttons buttons--column">
@@ -66,6 +64,19 @@
             <button id="choose-account" type="button">Grę z konta: <span id="choose-account-score">0</span> pkt</button>
           </div>
           <p>Druga gra zostanie usunięta.</p>
+        </div>
+    </section>
+    <main class="game">
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+        <div id="pause-overlay" class="overlay" hidden>
+          <p class="overlay-title">Pauza</p>
+          <p>Naciśnij P, aby grać dalej</p>
+        </div>
+        <div id="over-overlay" class="overlay" hidden>
+          <p class="overlay-title">Koniec gry</p>
+          <p>Wynik: <span id="final-score">0</span></p>
+          <button id="restart" type="button">Zagraj ponownie</button>
         </div>
       </div>
       <aside class="panel">
@@ -90,6 +101,7 @@
     <script src="src/save.js"></script>
     <script src="src/api.js"></script>
     <script src="src/auth.js"></script>
+    <script src="src/space.js"></script>
     <script src="src/config.js"></script>
     <script src="src/view.js"></script>
   </body>

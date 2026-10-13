@@ -47,6 +47,17 @@
     MODALS.forEach((modal) => {
       modal.hidden = modal !== el;
     });
+    updateScene();
+  }
+
+  // Kosmos: pełny przy oknach (Witaj, logowanie…), przyciemniony przy końcu gry, w grze wyłączony.
+  const space = T.createSpace({ canvas: $('space-canvas'), titleEl: $('scene-title') });
+  function updateScene() {
+    const scene = modalOpen();
+    const dim = !scene && state !== null && state.status === 'over';
+    document.body.classList.toggle('is-scene', scene);
+    document.body.classList.toggle('is-dim', dim);
+    space.setMode(scene ? 'scene' : dim ? 'dim' : 'off');
   }
 
   // --- Pamięć przeglądarki (może być niedostępna — wtedy działamy bez niej) ---
@@ -132,6 +143,7 @@
     else playerEl.textContent = nick && state ? `Gracz: ${nick}` : '';
     accountButton.hidden = !session && !state;
     accountButton.textContent = session ? 'Wyloguj' : 'Zaloguj się';
+    updateScene();
   }
 
   // --- Zapisy w bazie ---
